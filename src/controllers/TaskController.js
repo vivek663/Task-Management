@@ -2,78 +2,106 @@ import Task from '../models/Task';
 
 class TaskController {
     constructor() {
-        this.tasks = JSON.parse(localStorage.getItem('tasks')) || [];
+        // Initialize with test data
+        this.tasks = [
+            new Task(
+                1,
+                'Complete Project Documentation',
+                'Write comprehensive documentation for the new feature',
+                '2024-03-20',
+                'IN_PROGRESS',
+                'Need to include API endpoints',
+                '2024-03-15',
+                '2024-03-15',
+                'John Doe',
+                'John Doe'
+            ),
+            new Task(
+                2,
+                'Code Review',
+                'Review pull requests from team members',
+                '2024-03-18',
+                'TODO',
+                'Priority: High',
+                '2024-03-15',
+                '2024-03-15',
+                'Jane Smith',
+                'Jane Smith'
+            ),
+            new Task(
+                3,
+                'Bug Fixes',
+                'Fix reported bugs in production',
+                '2024-03-17',
+                'COMPLETED',
+                'All critical bugs resolved',
+                '2024-03-14',
+                '2024-03-15',
+                'Mike Johnson',
+                'Mike Johnson'
+            )
+        ];
     }
 
     // Create
-    createTask(taskData) {
+    async createTask(taskData) {
         const newTask = new Task(
-            Date.now().toString(),
+            this.tasks.length + 1,
             taskData.title,
             taskData.description,
             taskData.dueDate,
-            taskData.status || 'Pending',
-            taskData.remarks,
-            new Date().toISOString(),
-            new Date().toISOString(),
+            taskData.status || 'TODO',
+            taskData.remarks || '',
+            new Date().toISOString().split('T')[0],
+            new Date().toISOString().split('T')[0],
             taskData.createdBy,
             taskData.createdBy
         );
         this.tasks.push(newTask);
-        this.saveTasks();
         return newTask;
     }
 
     // Read
-    getAllTasks() {
+    async getAllTasks() {
         return this.tasks;
     }
 
-    getTaskById(id) {
+    async getTaskById(id) {
         return this.tasks.find(task => task.id === id);
     }
 
     // Update
-    updateTask(id, taskData) {
-        const taskIndex = this.tasks.findIndex(task => task.id === id);
-        if (taskIndex !== -1) {
-            this.tasks[taskIndex] = {
-                ...this.tasks[taskIndex],
+    async updateTask(id, taskData) {
+        const index = this.tasks.findIndex(task => task.id === id);
+        if (index !== -1) {
+            this.tasks[index] = {
+                ...this.tasks[index],
                 ...taskData,
-                lastUpdatedOn: new Date().toISOString(),
-                lastUpdatedBy: taskData.lastUpdatedBy
+                lastUpdatedOn: new Date().toISOString().split('T')[0]
             };
-            this.saveTasks();
-            return this.tasks[taskIndex];
+            return this.tasks[index];
         }
-        return null;
+        throw new Error('Task not found');
     }
 
     // Delete
-    deleteTask(id) {
-        const taskIndex = this.tasks.findIndex(task => task.id === id);
-        if (taskIndex !== -1) {
-            this.tasks.splice(taskIndex, 1);
-            this.saveTasks();
+    async deleteTask(id) {
+        const index = this.tasks.findIndex(task => task.id === id);
+        if (index !== -1) {
+            this.tasks.splice(index, 1);
             return true;
         }
-        return false;
+        throw new Error('Task not found');
     }
 
     // Search
-    searchTasks(query) {
+    async searchTasks(query) {
         const searchTerm = query.toLowerCase();
         return this.tasks.filter(task => 
             task.title.toLowerCase().includes(searchTerm) ||
             task.description.toLowerCase().includes(searchTerm) ||
-            task.status.toLowerCase().includes(searchTerm) ||
             task.remarks.toLowerCase().includes(searchTerm)
         );
-    }
-
-    // Helper method to save tasks to localStorage
-    saveTasks() {
-        localStorage.setItem('tasks', JSON.stringify(this.tasks));
     }
 }
 

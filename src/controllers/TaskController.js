@@ -2,7 +2,6 @@ import Task from '../models/Task';
 
 class TaskController {
     constructor() {
-        // Initialize with test data
         this.tasks = [
             new Task(
                 1,
@@ -89,9 +88,13 @@ class TaskController {
         const index = this.tasks.findIndex(task => task.id === id);
         if (index !== -1) {
             this.tasks.splice(index, 1);
+            // Reassign IDs to maintain sequential order
+            this.tasks.forEach((task, index) => {
+                task.id = index + 1;
+            });
             return true;
         }
-        throw new Error('Task not found');
+        return false;
     }
 
     // Search
@@ -100,9 +103,10 @@ class TaskController {
         return this.tasks.filter(task => 
             task.title.toLowerCase().includes(searchTerm) ||
             task.description.toLowerCase().includes(searchTerm) ||
-            task.remarks.toLowerCase().includes(searchTerm)
+            (task.remarks && task.remarks.toLowerCase().includes(searchTerm))
         );
     }
 }
 
-export default new TaskController(); 
+const taskController = new TaskController();
+export default taskController; 

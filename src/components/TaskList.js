@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import TaskController from '../controllers/TaskController';
 import TaskForm from './TaskForm';
+import TaskDetails from './TaskDetails';
 import './TaskList.css';
 
 const TaskList = () => {
@@ -8,6 +9,7 @@ const TaskList = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const [editingTask, setEditingTask] = useState(null);
     const [showForm, setShowForm] = useState(false);
+    const [selectedTask, setSelectedTask] = useState(null);
 
     useEffect(() => {
         loadTasks();
@@ -30,15 +32,37 @@ const TaskList = () => {
     };
 
     const handleDelete = async (id) => {
-        if (window.confirm('Are you sure you want to delete this task?')) {
-            await TaskController.deleteTask(id);
-            await loadTasks();
+        try {
+            if (window.confirm('Are you sure you want to delete this task?')) {
+                const success = await TaskController.deleteTask(id);
+                if (success) {
+                    await loadTasks();
+                    // If the deleted task was selected, clear the selection
+                    if (selectedTask && selectedTask.id === id) {
+                        setSelectedTask(null);
+                    }
+                    // If the deleted task was being edited, clear the edit state
+                    if (editingTask && editingTask.id === id) {
+                        setEditingTask(null);
+                        setShowForm(false);
+                    }
+                } else {
+                    alert('Failed to delete task. Please try again.');
+                }
+            }
+        } catch (error) {
+            console.error('Error deleting task:', error);
+            alert('An error occurred while deleting the task. Please try again.');
         }
     };
 
     const handleEdit = (task) => {
         setEditingTask(task);
         setShowForm(true);
+    };
+
+    const handleTaskClick = (task) => {
+        setSelectedTask(task);
     };
 
     const handleFormSubmit = async (taskData) => {
@@ -56,6 +80,11 @@ const TaskList = () => {
         setShowForm(false);
         setEditingTask(null);
         await loadTasks();
+    };
+
+    const handleFormClose = () => {
+        setShowForm(false);
+        setEditingTask(null);
     };
 
     return (
@@ -80,29 +109,54 @@ const TaskList = () => {
                 <TaskForm
                     task={editingTask}
                     onSubmit={handleFormSubmit}
-                    onCancel={() => {
-                        setShowForm(false);
-                        setEditingTask(null);
+                    onClose={handleFormClose}
+                />
+            )}
+
+            {selectedTask && (
+                <TaskDetails
+                    task={selectedTask}
+                    onClose={() => setSelectedTask(null)}
+                    onEdit={() => {
+                        setEditingTask(selectedTask);
+                        setShowForm(true);
+                        setSelectedTask(null);
                     }}
                 />
             )}
 
             <div className="tasks-grid">
                 {tasks.map(task => (
-                    <div key={task.id} className="task-card">
+                    <div 
+                        key={task.id} 
+                        className="task-card"
+                        onClick={() => handleTaskClick(task)}
+                    >
                         <h3>{task.title}</h3>
                         <p>{task.description}</p>
                         <div className="task-details">
-                            <p className={`status ${task.status.toLowerCase()}`}>
+                            <span className={`status ${task.status.toLowerCase()}`}>
                                 {task.status}
-                            </p>
-                            <p className="due-date">Due: {task.dueDate}</p>
+                            </span>
+                            <span className="due-date">Due: {task.dueDate}</span>
                         </div>
                         <div className="task-actions">
-                            <button onClick={() => handleEdit(task)} className="edit-btn">
+                            <button 
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleEdit(task);
+                                }} 
+                                className="edit-btn"
+                            >
                                 Edit
                             </button>
-                            <button onClick={() => handleDelete(task.id)} className="delete-btn">
+                            <button 
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleDelete(task.id);
+                                }} 
+                                className="delete-btn"
+                            >
                                 Delete
                             </button>
                         </div>
